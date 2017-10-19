@@ -1,110 +1,31 @@
 import java.util.*;
 import java.io.*;
 
+/**
+   Brandon Dixon
+   10/19/2017
+   CS 145
+   WordSearch.java
+   
+   An object that generates word searches.
+*/
+
 public class WordSearch{
    private char[][] grid;
    private boolean[][] sol;
    private String[] words;
    
-   public WordSearch(String[] words){
-      for(int i = 0 ; i < words.length ; i++){
-         words[i] = words[i].toLowerCase();
+   //Accepts a parameter of a string array and generates a new word search from this array.
+   public void generate(String[] w){
+      for(int i = 0 ; i < w.length ; i++){
+         w[i] = w[i].toLowerCase();
       }
-      this.words = words;
-   }
-   
-   public void generate(){
-      char[][] wordChars = new char[words.length][];
-      int longest = 8;
-      for(int i = 0 ; i < words.length ; i++){
-         wordChars[i] = words[i].toCharArray();
-         if(wordChars[i].length > longest){
-            longest = wordChars[i].length;
-         }
-      }
-      this.grid = new char[longest + 2][longest + 2];
-      this.sol = new boolean[longest + 2][longest + 2];
-      Random rand = new Random();
+      this.words = w;
+      char[][] wordChars = setupGrid();
       for(int i = 0 ; i < wordChars.length ; i++){
-         int direction = rand.nextInt(3);
-         int posX = 0;
-         int posY = 0;
-         if(direction == 0){ //horizontal
-            boolean placed = false;
-            int attempts = 0;
-            while(!placed && attempts < 100){
-               posX = rand.nextInt((grid.length-1) - wordChars[i].length);
-               posY = rand.nextInt((grid.length-1) - wordChars[i].length);
-               placed = true;
-               for(int u = 0 ; u < wordChars[i].length ; u++){
-                  if(grid[posX + u][posY] != '\u0000' && grid[posX + u][posY] != wordChars[i][u]){
-                     placed = false;
-                     break;
-                  }
-               }
-               attempts++;
-            }
-            if(placed){
-               for(int x = 0 ; x < wordChars[i].length ; x++){
-                  grid[posX][posY] = wordChars[i][x];
-                  sol[posX][posY] = true;
-                  posX++;
-               }
-            }
-         }else if(direction == 1){ //vertical
-            boolean placed = false;
-            int attempts = 0;
-            while(!placed && attempts < 100){
-               posX = rand.nextInt((grid.length-1) - wordChars[i].length);
-               posY = rand.nextInt((grid.length-1) - wordChars[i].length);
-               placed = true;
-               for(int u = 0 ; u < wordChars[i].length ; u++){
-                  if(grid[posX][posY + u] != '\u0000' && grid[posX][posY + u] != wordChars[i][u]){
-                     placed = false;
-                     break;
-                  }
-               }
-               attempts++;
-            }
-            if(placed){
-               for(int x = 0 ; x < wordChars[i].length ; x++){
-                  grid[posX][posY] = wordChars[i][x];
-                  sol[posX][posY] = true;
-                  posY++;
-               }
-            }
-         }else if(direction == 2){ //diagonal
-            boolean placed = false;
-            int attempts = 0;
-            while(!placed && attempts < 100){
-               posX = rand.nextInt((grid.length-1) - wordChars[i].length);
-               posY = rand.nextInt((grid.length-1) - wordChars[i].length);
-               placed = true;
-               for(int u = 0 ; u < wordChars[i].length ; u++){
-                  if(grid[posX + u][posY + u] != '\u0000' && grid[posX + u][posY + u] != wordChars[i][u]){
-                     placed = false;
-                     break;
-                  }
-               }
-               attempts++;
-            }
-            if(placed){
-               for(int x = 0 ; x < wordChars[i].length ; x++){
-                  grid[posX][posY] = wordChars[i][x];
-                  sol[posX][posY] = true;
-                  posY++;
-                  posX++;
-               }
-            }
-         }
+         placeWord(wordChars, i);
       }
-      for(int i = 0 ; i < grid.length ; i++){
-         for(int x = 0 ; x < grid[i].length ; x++){
-            if(grid[i][x] == '\u0000'){
-               grid[i][x] = (char)(rand.nextInt(26)+97);
-            }
-         } 
-      }
+      fillGrid();
    }
    
    public String toString(){
@@ -113,12 +34,13 @@ public class WordSearch{
          for(int x = 0 ; x < grid[i].length ; x++){
             result += " " + grid[i][x] + " ";
          }
-         result += "\n";
+         result += "\r\n";
       }
       return result;
    }
    
-   public String solve(){
+   //Returns a string representation of the word searches solution.
+   public String toSolution(){
       String result = "";
       for(int i = 0 ; i < grid.length ; i++){
          for(int x = 0 ; x < grid[i].length ; x++){
@@ -128,8 +50,120 @@ public class WordSearch{
                result += " X ";
             }
          }
-         result += "\n";
+         result += "\r\n";
       }
       return result;
+   }
+   
+   public void toFile(File f) throws FileNotFoundException{
+      PrintStream fout = new PrintStream(f);
+      fout.println(this);
+      fout.println(this.toSolution());
+   }
+   
+   //Places a word in the word search grid. Determines the direction of the word and finds a valid place.
+   private void placeWord(char[][] wordChars, int iter){
+      Random rand = new Random();
+      int direction = rand.nextInt(3);
+      int[] pos = {0,0};
+      if(direction == 0){ //horizontal
+         boolean placed = false;
+         int attempts = 0;
+         while(!placed && attempts < 100){
+            pos[0] = rand.nextInt((grid.length-1) - wordChars[iter].length);
+            pos[1] = rand.nextInt((grid.length-1) - wordChars[iter].length);
+            placed = true;
+            for(int u = 0 ; u < wordChars[iter].length ; u++){
+               if(grid[pos[0] + u][pos[1]] != '\u0000' && grid[pos[0] + u][pos[1]] != wordChars[iter][u]){
+                  placed = false;
+                  break;
+               }
+            }
+            attempts++;
+         }
+         if(placed){
+            for(int x = 0 ; x < wordChars[iter].length ; x++){
+               grid[pos[0]][pos[1]] = wordChars[iter][x];
+               sol[pos[0]][pos[1]] = true;
+               pos[0]++;
+            }
+         }
+      }else if(direction == 1){ //vertical
+         boolean placed = false;
+         int attempts = 0;
+         while(!placed && attempts < 100){
+            pos[0] = rand.nextInt((grid.length-1) - wordChars[iter].length);
+            pos[1] = rand.nextInt((grid.length-1) - wordChars[iter].length);
+            placed = true;
+            for(int u = 0 ; u < wordChars[iter].length ; u++){
+               if(grid[pos[0]][pos[1] + u] != '\u0000' && grid[pos[0]][pos[1] + u] != wordChars[iter][u]){
+                  placed = false;
+                  break;
+               }
+            }
+            attempts++;
+         }
+         if(placed){
+            for(int x = 0 ; x < wordChars[iter].length ; x++){
+               grid[pos[0]][pos[1]] = wordChars[iter][x];
+               sol[pos[0]][pos[1]] = true;
+               pos[1]++;
+            }
+         }
+      }else if(direction == 2){ //diagonal
+         boolean placed = false;
+         int attempts = 0;
+         while(!placed && attempts < 100){
+            pos[0] = rand.nextInt((grid.length-1) - wordChars[iter].length);
+            pos[1] = rand.nextInt((grid.length-1) - wordChars[iter].length);
+            placed = true;
+            for(int u = 0 ; u < wordChars[iter].length ; u++){
+               if(grid[pos[0] + u][pos[1] + u] != '\u0000' && grid[pos[0] + u][pos[1] + u] != wordChars[iter][u]){
+                  placed = false;
+                  break;
+               }
+            }
+            attempts++;
+         }
+         if(placed){
+            for(int x = 0 ; x < wordChars[iter].length ; x++){
+               grid[pos[0]][pos[1]] = wordChars[iter][x];
+               sol[pos[0]][pos[1]] = true;
+               pos[1]++;
+               pos[0]++;
+            }
+         }
+      }
+   }
+   
+   //Breaks up the string array into a 2d char array and adjusts the size of the grid based on the 
+   //length and number of the words.
+   private char[][] setupGrid(){
+      char[][] wordChars = new char[words.length][];
+      int longest = 8;
+      for(int i = 0 ; i < words.length ; i++){
+         wordChars[i] = words[i].toCharArray();
+         if(wordChars[i].length > longest){
+            longest = wordChars[i].length;
+         }
+      }
+      if(words.length > longest){
+         longest = words.length;
+      }
+      this.grid = new char[longest + 4][longest + 4];
+      this.sol = new boolean[longest + 4][longest + 4];
+      return wordChars;
+   }
+   
+   //Fills the grid with random characters in all of the empty indeces.
+   private void fillGrid(){
+      for(int i = 0 ; i < grid.length ; i++){
+         for(int x = 0 ; x < grid[i].length ; x++){
+            Random rand = new Random();
+            if(grid[i][x] == '\u0000'){
+               grid[i][x] = (char)(rand.nextInt(26)+97);
+            }
+         } 
+      }
    }
 }
